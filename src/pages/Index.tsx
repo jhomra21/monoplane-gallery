@@ -25,13 +25,25 @@ const Index = () => {
     }
   }, [inView, planes, queryClient, viewedPlanes]);
 
-  // Track viewed planes
+  // Track viewed planes using Intersection Observer
+  const { ref: viewRef, inView: isPlaneInView } = useInView({
+    threshold: 0.5, // Trigger when 50% of the plane card is visible
+  });
+
+  // Handle plane viewed
   const handlePlaneViewed = (planeName: string) => {
     if (!viewedPlanes.includes(planeName)) {
       setViewedPlanes(prev => [...prev, planeName]);
       console.log("Viewed planes:", [...viewedPlanes, planeName]);
     }
   };
+
+  useEffect(() => {
+    if (isPlaneInView && planes.length > 0) {
+      const currentPlane = planes[Math.floor(planes.length / 2)];
+      handlePlaneViewed(currentPlane.name);
+    }
+  }, [isPlaneInView, planes]);
 
   if (isLoading && planes.length === 0) {
     return (
@@ -56,7 +68,7 @@ const Index = () => {
           <div
             key={plane.id}
             className="snap-start"
-            onViewportEnter={() => handlePlaneViewed(plane.name)}
+            ref={index === Math.floor(planes.length / 2) ? viewRef : undefined}
           >
             <PlaneCard plane={plane} />
             {index === planes.length - 2 && (
