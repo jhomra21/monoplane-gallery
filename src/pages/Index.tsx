@@ -8,29 +8,36 @@ import { useInView } from "react-intersection-observer";
 const Index = () => {
   const [viewedPlanes, setViewedPlanes] = useState<string[]>([]);
   const queryClient = useQueryClient();
-  const { ref: loadMoreRef, inView } = useInView();
 
-  const { data: planes = [], isLoading } = useQuery({
+  const { data: planes = [], isLoading, isFetching } = useQuery({
     queryKey: ["planes", viewedPlanes],
     queryFn: () => searchWikiPlanes(viewedPlanes),
+    staleTime: 60000,
+    keepPreviousData: true
   });
 
-  // Pre-fetch next batch when user reaches the 4th plane
+  // Load more trigger near the end
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.1,
+    rootMargin: "100px",
+  });
+
+  // Pre-fetch next batch when user reaches the load more trigger
   useEffect(() => {
-    if (inView) {
+    if (inView && !isFetching) {
       queryClient.prefetchQuery({
         queryKey: ["planes", [...viewedPlanes, ...planes.map(p => p.name)]],
         queryFn: () => searchWikiPlanes([...viewedPlanes, ...planes.map(p => p.name)]),
       });
     }
-  }, [inView, planes, queryClient, viewedPlanes]);
+  }, [inView, planes, queryClient, viewedPlanes, isFetching]);
 
-  // Track viewed planes using Intersection Observer
+  // Track viewed planes
   const { ref: viewRef, inView: isPlaneInView } = useInView({
-    threshold: 0.5, // Trigger when 50% of the plane card is visible
+    threshold: 0.5,
+    triggerOnce: true,
   });
 
-  // Handle plane viewed
   const handlePlaneViewed = (planeName: string) => {
     if (!viewedPlanes.includes(planeName)) {
       setViewedPlanes(prev => [...prev, planeName]);
@@ -76,8 +83,8 @@ const Index = () => {
             )}
           </div>
         ))}
-        {isLoading && (
-          <div className="flex justify-center p-4">
+        {isFetching && planes.length > 0 && (
+          <div className="flex justify-center p-4 snap-start">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         )}

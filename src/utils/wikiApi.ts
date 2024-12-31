@@ -9,7 +9,6 @@ export interface PlaneInfo {
   imageUrl: string;
 }
 
-// List of aircraft to randomly select from
 const AIRCRAFT_LIST = [
   "Boeing 747", "Concorde", "Airbus A380", "Lockheed SR-71 Blackbird",
   "Supermarine Spitfire", "F-22 Raptor", "P-51 Mustang", "Boeing B-17",
@@ -40,14 +39,30 @@ export const searchWikiPlanes = async (exclude: string[] = []): Promise<PlaneInf
 
   for (const [index, planeName] of planeNames.entries()) {
     try {
+      // First, get the exact page title to avoid redirects
+      const searchParams = new URLSearchParams({
+        origin: "*",
+        action: "query",
+        format: "json",
+        list: "search",
+        srsearch: `${planeName} aircraft`,
+        srlimit: "1"
+      });
+
+      const searchResponse = await fetch(`${WIKI_API_BASE}?${searchParams}`);
+      const searchData = await searchResponse.json();
+      const exactTitle = searchData.query.search[0]?.title || planeName;
+
+      // Then get the full page data
       const params = new URLSearchParams({
         origin: "*",
         action: "query",
         format: "json",
-        prop: "extracts|pageimages",
+        prop: "extracts|pageimages|info",
         exintro: "true",
         explaintext: "true",
-        titles: planeName,
+        inprop: "url",
+        titles: exactTitle,
         pithumbsize: "1000"
       });
 
@@ -56,17 +71,18 @@ export const searchWikiPlanes = async (exclude: string[] = []): Promise<PlaneInf
       const page = Object.values(data.query.pages)[0] as any;
 
       const extract = page.extract || "";
-      const description = extract.split("\n")[0];
+      let description = extract.split("\n")[0];
 
-      const manufacturerMatch = description.match(/manufactured by ([^.]+)/i);
-      const firstFlightMatch = description.match(/first fl[ew|ight] (?:on )?([^.]+)/i);
+      // Better regex patterns for manufacturer and first flight
+      const manufacturerMatch = extract.match(/(?:manufactured|built|developed|designed) by ([^.,]+)/i);
+      const firstFlightMatch = extract.match(/(?:first flew|first flight|maiden flight|entered service) (?:on |in )?([^.,]+)/i);
 
       planes.push({
-        id: Date.now() + index, // Using timestamp + index for unique IDs
+        id: Date.now() + index,
         name: planeName,
-        manufacturer: manufacturerMatch?.[1] || "Unknown Manufacturer",
-        firstFlight: firstFlightMatch?.[1] || "Date unknown",
-        description: description,
+        manufacturer: manufacturerMatch?.[1]?.trim() || "Unknown Manufacturer",
+        firstFlight: firstFlightMatch?.[1]?.trim() || "Date unknown",
+        description: description || `The ${planeName} is a notable aircraft in aviation history.`,
         imageUrl: page.thumbnail?.source || "https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=2070&auto=format&fit=crop"
       });
     } catch (error) {
