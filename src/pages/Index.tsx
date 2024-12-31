@@ -1,15 +1,39 @@
 import { PlaneCard } from "@/components/PlaneCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { searchWikiPlanes } from "@/utils/wikiApi";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
 
 const Index = () => {
-  const { data: planes, isLoading } = useQuery({
-    queryKey: ["planes"],
-    queryFn: searchWikiPlanes,
+  const [viewedPlanes, setViewedPlanes] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+  const { ref: loadMoreRef, inView } = useInView();
+
+  const { data: planes = [], isLoading } = useQuery({
+    queryKey: ["planes", viewedPlanes],
+    queryFn: () => searchWikiPlanes(viewedPlanes),
   });
 
-  if (isLoading) {
+  // Pre-fetch next batch when user reaches the 4th plane
+  useEffect(() => {
+    if (inView) {
+      queryClient.prefetchQuery({
+        queryKey: ["planes", [...viewedPlanes, ...planes.map(p => p.name)]],
+        queryFn: () => searchWikiPlanes([...viewedPlanes, ...planes.map(p => p.name)]),
+      });
+    }
+  }, [inView, planes, queryClient, viewedPlanes]);
+
+  // Track viewed planes
+  const handlePlaneViewed = (planeName: string) => {
+    if (!viewedPlanes.includes(planeName)) {
+      setViewedPlanes(prev => [...prev, planeName]);
+      console.log("Viewed planes:", [...viewedPlanes, planeName]);
+    }
+  };
+
+  if (isLoading && planes.length === 0) {
     return (
       <div className="min-h-screen bg-dark flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -28,11 +52,23 @@ const Index = () => {
       </header>
 
       <main className="pt-16 h-screen overflow-y-auto scrollbar-hide snap-y snap-mandatory">
-        {planes?.map((plane) => (
-          <div key={plane.id} className="snap-start">
+        {planes.map((plane, index) => (
+          <div
+            key={plane.id}
+            className="snap-start"
+            onViewportEnter={() => handlePlaneViewed(plane.name)}
+          >
             <PlaneCard plane={plane} />
+            {index === planes.length - 2 && (
+              <div ref={loadMoreRef} className="h-1" />
+            )}
           </div>
         ))}
+        {isLoading && (
+          <div className="flex justify-center p-4">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        )}
       </main>
     </div>
   );
