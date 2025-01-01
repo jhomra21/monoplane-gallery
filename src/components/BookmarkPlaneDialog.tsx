@@ -79,13 +79,23 @@ export function BookmarkPlaneDialog({ plane, open, onOpenChange }: BookmarkPlane
                 rel="noopener noreferrer" 
                 className="inline-block"
               >
-                <h2 className="text-2xl font-bold font-mono text-[#00ff00] hover:text-cyan-400 transition-colors">
-                  {plane.name}
-                </h2>
+                <div className="relative inline-flex flex-col group">
+                  {/* Targeting corners - they will resize with the content */}
+                  <div className="absolute -top-3 -left-3 w-4 h-4 border-l-2 border-t-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -top-3 -right-3 w-4 h-4 border-r-2 border-t-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -bottom-3 -left-3 w-4 h-4 border-l-2 border-b-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -bottom-3 -right-3 w-4 h-4 border-r-2 border-b-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  
+                  <h2 className="text-2xl font-bold font-mono text-[#00ff00] group-hover:text-cyan-400 transition-colors px-4 pt-2">
+                    {plane.name}
+                  </h2>
+                  <div className="flex items-center gap-4 px-4 pb-2 text-xs font-mono">
+                    <span className="text-cyan-400">SYS.ID: {plane.id.toString().padStart(4, '0')}</span>
+                    <span className="text-yellow-400">SYS.STATUS: <span className="text-[#00ff00]">ACTIVE</span></span>
+                  </div>
+                </div>
               </a>
-              <div className="text-xs text-cyan-400 font-mono mt-1">
-                SYS.ID: {plane.id.toString().padStart(4, '0')}
-              </div>
+             
             </div>
           </div>
           

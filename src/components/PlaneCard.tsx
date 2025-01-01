@@ -306,68 +306,81 @@ export const PlaneCard = ({ plane, isExpanded = false, onToggleExpand }: PlaneCa
           
           {/* Header */}
           <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-cyan-500/20 p-4">
-            <div className="flex flex-col gap-2">
-              <h2 className="font-mono text-2xl font-bold tracking-tight text-[#00ff00] mb-2">
-                {plane.name}
-              </h2>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono gap-3 sm:gap-0">
-                <div className="flex items-center gap-4">
-                  <span className="text-cyan-400">SYS.ID: {plane.id.toString().padStart(4, '0')}</span>
-                  <span className="text-yellow-400">SYS.STATUS: <span className="text-[#00ff00]">ACTIVE</span></span>
-                </div>
-                <div className="flex items-center">
-                  <div className="hidden sm:block w-[1px] h-6 bg-cyan-500/20 mx-4" />
-                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 border-cyan-500/20 pt-3 sm:pt-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={openFullscreen}
-                      className="h-6 px-2 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70 text-cyan-400 rounded-none flex items-center gap-1"
+            <div className="flex justify-between items-center">
+              <div className="flex items-start">
+                <div className="relative inline-flex flex-col group">
+                  {/* Targeting corners - they will resize with the content */}
+                  <div className="absolute -top-3 -left-3 w-4 h-4 border-l-2 border-t-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -top-3 -right-3 w-4 h-4 border-r-2 border-t-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -bottom-3 -left-3 w-4 h-4 border-l-2 border-b-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  <div className="absolute -bottom-3 -right-3 w-4 h-4 border-r-2 border-b-2 border-[#00ff00]/60 group-hover:border-[#00ff00]" />
+                  
+                  <h2 className="font-mono text-2xl font-bold tracking-tight text-white group-hover:text-[#00ff00] px-4 pt-2">
+                    <a 
+                      href={getWikipediaUrl(plane.name)} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-block"
                     >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                      <span className="text-xs font-mono">VIEW</span>
-                    </Button>
-                    <a
-                      href={getWikipediaUrl(plane.name)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-6 px-2 inline-flex items-center gap-1 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70 text-cyan-400 transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span className="text-xs font-mono">WIKI</span>
+                      {plane.name}
                     </a>
-                    <button
-                      onClick={handleBookmarkClick}
-                      className={cn(
-                        "h-6 px-2 group flex items-center gap-1 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70",
-                        "transition-all duration-500",
-                        isBookmarkAnimating && "animate-bookmark"
-                      )}
-                    >
-                      <Bookmark 
-                        className={cn(
-                          "w-3.5 h-3.5 transition-all duration-300",
-                          isBookmarked ? (
-                            "fill-yellow-400 text-yellow-400 group-hover:text-yellow-300 group-hover:fill-yellow-300"
-                          ) : (
-                            "text-cyan-400 group-hover:text-cyan-300"
-                          ),
-                          isBookmarkAnimating && "scale-150"
-                        )} 
-                      />
-                      <span className={cn(
-                        "text-xs font-mono transition-all duration-300",
-                        isBookmarked ? (
-                          "text-yellow-400 group-hover:text-yellow-300"
-                        ) : (
-                          "text-cyan-400 group-hover:text-cyan-300"
-                        )
-                      )}>
-                        {isBookmarked ? 'SAVED' : 'SAVE'}
-                      </span>
-                    </button>
+                  </h2>
+                  <div className="flex items-center gap-4 px-4 pb-2 text-xs font-mono">
+                    <span className="text-cyan-400">SYS.ID: {plane.id.toString().padStart(4, '0')}</span>
+                    <span className="text-yellow-400">SYS.STATUS: <span className="text-[#00ff00]">ACTIVE</span></span>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex items-start gap-4 pt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={openFullscreen}
+                  className="h-6 px-2 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70 text-cyan-400 rounded-none flex items-center gap-1"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span className="text-xs font-mono">VIEW</span>
+                </Button>
+                <a
+                  href={getWikipediaUrl(plane.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-6 px-2 inline-flex items-center gap-1 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70 text-cyan-400 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span className="text-xs font-mono">WIKI</span>
+                </a>
+                <button
+                  onClick={handleBookmarkClick}
+                  className={cn(
+                    "h-6 px-2 group flex items-center gap-1 bg-[#0a0a0a]/50 hover:bg-[#0a0a0a]/70",
+                    "transition-all duration-500",
+                    isBookmarkAnimating && "animate-bookmark"
+                  )}
+                >
+                  <Bookmark 
+                    className={cn(
+                      "w-3.5 h-3.5 transition-all duration-300",
+                      isBookmarked ? (
+                        "fill-yellow-400 text-yellow-400 group-hover:text-yellow-300 group-hover:fill-yellow-300"
+                      ) : (
+                        "text-cyan-400 group-hover:text-cyan-300"
+                      ),
+                      isBookmarkAnimating && "scale-150"
+                    )} 
+                  />
+                  <span className={cn(
+                    "text-xs font-mono transition-all duration-300",
+                    isBookmarked ? (
+                      "text-yellow-400 group-hover:text-yellow-300"
+                    ) : (
+                      "text-cyan-400 group-hover:text-cyan-300"
+                    )
+                  )}>
+                    {isBookmarked ? 'SAVED' : 'SAVE'}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
