@@ -3,6 +3,8 @@
 This project is a web application built using Vite, React, TypeScript, and Tailwind CSS. 
 Deployed on Cloudflare Pages.
 
+---
+
 ## Features
 
 - **Vite**: A fast build tool and development server.
@@ -11,6 +13,8 @@ Deployed on Cloudflare Pages.
 - **Tailwind CSS**: A utility-first CSS framework for rapid UI development.
 - **ShadCN UI**: A component library for building accessible and customizable UI elements.
 - **Radix UI**: A set of accessible and customizable UI components.
+
+---
 
 ## Running the Project Locally
 
@@ -34,6 +38,8 @@ To run this project locally, follow these steps:
 
 4. **Open your browser** and navigate to `http://localhost:{PORT}` to view the application.
 
+---
+
 ## Building for Production
 
 To build the project for production, run:
@@ -44,6 +50,8 @@ bun run build
 
 This will create an optimized build of the application in the `dist` directory.
 
+---
+
 ## Previewing the Production Build
 
 To preview the production build, run:
@@ -53,3 +61,5 @@ bun run preview
 ```
 
 This will start a local server to preview the production build.
+
+---
