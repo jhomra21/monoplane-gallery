@@ -1,5 +1,5 @@
 import { Maximize2, X, ExternalLink, ChevronDown, ChevronUp, Info, Plane, Calendar, Shield, Bookmark, Ruler, Users, Gauge, Route, Crosshair, DollarSign, Scale, Zap, Users2 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toggleBookmark, bookmarkStore } from "@/stores/bookmarkStore";
@@ -29,6 +29,7 @@ export const PlaneCard = ({ plane, isExpanded = false, onToggleExpand }: PlaneCa
   const [isBookmarkAnimating, setIsBookmarkAnimating] = useState(false);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   
   const { data: extendedInfo, isLoading: isLoadingExtended } = useExtendedPlaneInfo(
     plane.name,
@@ -237,13 +238,41 @@ export const PlaneCard = ({ plane, isExpanded = false, onToggleExpand }: PlaneCa
     );
   };
 
+  // Handle visibility changes
+  useEffect(() => {
+    if (!cardRef.current || !onToggleExpand) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && isExpanded) {
+            onToggleExpand(plane.id.toString());
+          }
+        });
+      },
+      {
+        threshold: 0.1, // Trigger when 10% or less is visible
+        rootMargin: "-10% 0px" // Add some margin to trigger slightly before the card is fully out of view
+      }
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isExpanded, onToggleExpand, plane.id]);
+
   return (
     <>
-      <div className={cn(
-        "absolute inset-0 overflow-hidden",
-        "transition-all duration-500 ease-in-out bg-[#0a0a0a]",
-        "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,255,0.03),transparent_70%)]"
-      )}>
+      <div 
+        ref={cardRef}
+        className={cn(
+          "absolute inset-0 overflow-hidden",
+          "transition-all duration-500 ease-in-out bg-[#0a0a0a]",
+          "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,255,0.03),transparent_70%)]"
+        )}
+      >
         {/* Decorative corners */}
         <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-500/40 z-10" />
         <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-500/40 z-10" />
@@ -344,7 +373,7 @@ export const PlaneCard = ({ plane, isExpanded = false, onToggleExpand }: PlaneCa
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto h-[calc(100%-8rem)] custom-scrollbar">
+          <div className="overflow-y-auto h-[calc(100%-8rem)] pb-20 custom-scrollbar">
             <div className="p-4 space-y-4">
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4 font-mono text-sm">
@@ -387,7 +416,7 @@ export const PlaneCard = ({ plane, isExpanded = false, onToggleExpand }: PlaneCa
           </div>
 
           {/* Expand Button */}
-          <div className="sticky bottom-0 bg-[#0a0a0a] border-t border-cyan-500/20 p-4">
+          <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-cyan-500/20 p-4">
             <Button
               variant="outline"
               size="sm"
