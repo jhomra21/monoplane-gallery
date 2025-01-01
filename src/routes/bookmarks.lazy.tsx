@@ -3,9 +3,6 @@ import { useStore } from '@tanstack/react-store'
 import { bookmarkStore } from '@/stores/bookmarkStore'
 import { useCallback, useState } from 'react'
 import { BookmarkPlaneDialog } from '@/components/BookmarkPlaneDialog'
-import { Link } from '@tanstack/react-router'
-import { Home } from 'lucide-react'
-
 export const Route = createLazyFileRoute('/bookmarks')({
   component: BookmarksPage,
 })
@@ -30,21 +27,6 @@ function BookmarksPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-cyan-500/20">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-mono font-semibold text-[#00ff00]">
-            SYS.BOOKMARKS
-          </h1>
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300"
-          >
-            <Home className="w-4 h-4" />
-            <span className="text-sm font-mono">HOME</span>
-          </Link>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 pt-24">
         {bookmarkedPlanes.length === 0 ? (
           <div className="text-center py-12">
@@ -68,7 +50,7 @@ function BookmarksPage() {
 
                 <img
                   src={(plane as any).imageUrl}
-                  alt={(plane as any) .name}
+                  alt={(plane as any).name}
                   className="absolute inset-0 w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
                 />
 

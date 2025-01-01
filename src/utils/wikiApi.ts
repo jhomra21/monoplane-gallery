@@ -774,7 +774,7 @@ const getPlaneDetails = async (planeName: string): Promise<Partial<PlaneInfo>> =
       action: 'query',
       format: 'json',
       prop: 'extracts|pageimages',
-      exintro: '1',
+      exintro: '0',
       explaintext: '1',
       pithumbsize: '1000',
       titles: exactTitle,
@@ -788,8 +788,45 @@ const getPlaneDetails = async (planeName: string): Promise<Partial<PlaneInfo>> =
     const page = Object.values(data.query.pages)[0];
     if (!page) throw new Error('Page not found');
 
+    // Get the full extract
+    const fullExtract = page.extract || '';
+
+    // Define important sections to look for
+    const importantSections = [
+      'Introduction',
+      'Development',
+      'Design',
+      'Description',
+      'Overview',
+      'History',
+      'Background'
+    ];
+
+    // Split the extract into sections and find relevant ones
+    const sections = fullExtract.split('\n\n');
+    let relevantContent = sections[0]; // Always include the first paragraph
+
+    // Look for important sections in the first few paragraphs
+    for (let i = 1; i < Math.min(sections.length, 4); i++) {
+      const section = sections[i];
+      if (
+        section.length > 50 && // Avoid very short sections
+        importantSections.some(keyword => 
+          section.toLowerCase().includes(keyword.toLowerCase())
+        )
+      ) {
+        relevantContent += '\n\n' + section;
+      }
+    }
+
+    // Clean up the content
+    const cleanedContent = relevantContent
+      .replace(/\s+/g, ' ')
+      .replace(/\[\d+\]/g, '') // Remove reference numbers
+      .trim();
+
     return {
-      description: page.extract?.split('\n')[0] || `The ${planeName} is a notable aircraft in aviation history.`,
+      description: cleanedContent || `The ${planeName} is a notable aircraft in aviation history.`,
       imageUrl: page.thumbnail?.source,
     };
   } catch (error) {
