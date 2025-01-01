@@ -12,6 +12,31 @@ export interface PlaneInfo {
   imageUrl: string;
 }
 
+export interface ExtendedPlaneInfo {
+  specifications?: {
+    crew?: string;
+    length?: string;
+    wingspan?: string;
+    height?: string;
+    maxSpeed?: string;
+    range?: string;
+    serviceLife?: string;
+    armament?: string;
+    capacity?: string;
+    powerplant?: string;
+    weight?: string;
+    ceiling?: string;
+    climbRate?: string;
+    unitCost?: string;
+    status?: string;
+    primaryUsers?: string;
+    produced?: string;
+    number_built?: string;
+  };
+  history?: string[];
+  variants?: string[];
+}
+
 const AIRCRAFT_LIST = [
   "Boeing 747", "Concorde", "Airbus A380", "Lockheed SR-71 Blackbird",
   "Supermarine Spitfire", "F-22 Raptor", "P-51 Mustang", "Boeing B-17",
@@ -84,18 +109,44 @@ const KNOWN_MANUFACTURERS = [
 ];
 
 const cleanupText = (text: string): string => {
+  if (!text) return '';
+  
   return text
-    .replace(/<!--.*?-->/g, '') // Remove HTML comments
-    .replace(/\s*\([^)]*\)/g, '') // Remove parentheses and contents
-    .replace(/\s*\[[^\]]*\]/g, '') // Remove square brackets and contents
-    .replace(/\s*\{[^}]*\}/g, '') // Remove curly braces and contents
-    .replace(/\s*→.*$/, '') // Remove arrows and everything after
-    .replace(/\s*—.*$/, '') // Remove em dashes and everything after
-    .replace(/\s*-.*$/, '') // Remove hyphens and everything after
-    .replace(/\s*Field is.*$/i, '') // Remove "Field is..." text
-    .replace(/\s*\|.*$/, '') // Remove pipe and everything after
-    .replace(/\s*,.*$/, '') // Remove comma and everything after if it's not a known manufacturer
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    // Remove references
+    .replace(/<ref[^>]*?>.*?<\/ref>/gs, '')
+    .replace(/<ref[^>]*?\/>/g, '')
+    .replace(/<ref[^>]*?>/g, '')
+    
+    // Remove citation templates
+    .replace(/\{\{cite[^}]*\}\}/gi, '')
+    .replace(/\{\{citation[^}]*\}\}/gi, '')
+    
+    // Remove HTML comments
+    .replace(/<!--.*?-->/g, '')
+    
+    // Remove parameter assignments but keep the value if it's a measurement
+    .replace(/\|(?!(?:\d+(?:\.\d+)?(?:\s*(?:m|ft|in|kg|lb|km|mi|nmi|km\/h|mph|kn))?(?:\s*(?:–|-)\s*\d+(?:\.\d+)?(?:\s*(?:m|ft|in|kg|lb|km|mi|nmi|km\/h|mph|kn))?)?))[^|=]*=[^|]*/g, '')
+    
+    // Remove various brackets and their contents
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\s*\[[^\]]*\]/g, '')
+    .replace(/\s*\{[^}]*\}/g, '')
+    
+    // Remove various separators and their trailing content
+    .replace(/\s*→.*$/, '')
+    .replace(/\s*—.*$/, '')
+    .replace(/\s*-(?![\d\s])/g, '') // Keep hyphens in numbers
+    .replace(/\s*Field is.*$/i, '')
+    
+    // Remove templates
+    .replace(/\{\{convert\|(\d+(?:\.\d+)?)\|([^|}]+)[^}]*\}\}/g, '$1 $2')
+    .replace(/\{\{cvt\|(\d+(?:\.\d+)?)\|([^|}]+)[^}]*\}\}/g, '$1 $2')
+    
+    // Clean up remaining artifacts
+    .replace(/\*\*/g, '')
+    .replace(/\|\s*$/g, '')
+    .replace(/^\s*\|/, '')
+    .replace(/\s+/g, ' ')
     .trim();
 };
 
@@ -193,12 +244,73 @@ const parseWikiTemplates = (value: string): string => {
 };
 
 const parseInfoboxValue = (content: string, key: string): string | null => {
-  // More flexible regex that can handle multi-line values and nested templates
   const regex = new RegExp(`\\|\\s*${key}\\s*=\\s*([^|]*(?:\\|(?!\\s*[a-zA-Z_]+\\s*=)[^|]*)*)`);
   const match = content.match(regex);
   if (!match) return null;
 
-  return parseWikiTemplates(match[1]);
+  let value = match[1];
+
+  // Handle production dates
+  if (key === 'produced') {
+    const dateMatch = value.match(/(\d{4})(?:\s*[-–]\s*(\d{4}|\w+))?/);
+    if (dateMatch) {
+      const [_, startYear, endYear] = dateMatch;
+      return endYear ? `${startYear}–${endYear}` : startYear;
+    }
+  }
+
+  // Handle number built
+  if (key === 'number built') {
+    const numberMatch = value.match(/(\d+(?:,\d+)*)/);
+    if (numberMatch) {
+      return numberMatch[1].replace(/,/g, ',') + ' units';
+    }
+  }
+
+  // Handle unit cost with currency
+  if (key === 'unit cost') {
+    const costMatch = value.match(/(?:US)?\$?\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:million|billion|M|B)?/i);
+    if (costMatch) {
+      let [_, amount] = costMatch;
+      amount = amount.replace(/,/g, ',');
+      if (value.toLowerCase().includes('million')) {
+        return `$${amount}M`;
+      } else if (value.toLowerCase().includes('billion')) {
+        return `$${amount}B`;
+      }
+      return `$${amount}`;
+    }
+  }
+
+  // Handle capacity with better passenger/cargo parsing
+  if (key === 'capacity') {
+    // Handle passenger capacity with ranges
+    const passengerMatch = value.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:typical|max)?\s*passengers?/i);
+    if (passengerMatch) {
+      const [_, min, max] = passengerMatch;
+      return max ? `${min}–${max} passengers` : `${min} passengers`;
+    }
+    
+    // Handle cargo capacity
+    const cargoMatch = value.match(/(\d+(?:,\d+)?)\s*(?:kg|lb|tons?)/i);
+    if (cargoMatch) {
+      return cargoMatch[0];
+    }
+  }
+
+  // Handle measurements with unit conversion
+  const measurementMatch = value.match(/(\d+(?:\.\d+)?)\s*(?:m|ft|in|kg|lb|km|mi|nmi|km\/h|mph|kn)/);
+  if (measurementMatch) {
+    return measurementMatch[0];
+  }
+
+  // Clean up the value
+  const cleaned = cleanupText(value);
+  
+  // Return null if the cleaned value is empty or contains only special characters
+  if (!cleaned || /^[|=\s*]+$/.test(cleaned)) return null;
+  
+  return cleaned;
 };
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = TIMEOUT_MS): Promise<Response> => {
@@ -518,7 +630,7 @@ const getFirstFlight = async (planeName: string): Promise<string> => {
       const searchData = await searchResponse.json() as WikiResponse;
       let searchText = '';
       
-      if (searchData.query?.search?.length > 0) {
+      if (searchData.query?.search?.length && searchData.query.search.length > 0) {
         // Get full text for each search result
         for (const result of searchData.query.search) {
           const fullParams = new URLSearchParams({
@@ -652,6 +764,100 @@ const getPlaneDetails = async (planeName: string): Promise<Partial<PlaneInfo>> =
       imageUrl: "https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=2070&auto=format&fit=crop",
     };
   }
+};
+
+const getExtendedPlaneInfo = async (planeName: string): Promise<ExtendedPlaneInfo> => {
+  // First, get the correct title (handle redirects)
+  const searchTitle = await searchWikiArticle(planeName);
+  
+  const params = new URLSearchParams({
+    origin: '*',
+    action: 'query',
+    format: 'json',
+    prop: 'revisions|extracts',
+    rvprop: 'content',
+    rvslots: '*',
+    exintro: '0',
+    explaintext: '1',
+    titles: searchTitle
+  });
+
+  const response = await fetchWithTimeout(`${WIKI_API_BASE}?${params}`);
+  const data = await response.json() as WikiResponse;
+  const page = Object.values(data.query.pages)[0];
+  const content = page.revisions?.[0]?.slots.main['*'] || '';
+  const extract = page.extract || '';
+
+  // Parse specifications from infobox with more fields
+  const specifications = {
+    crew: parseInfoboxValue(content, 'crew'),
+    length: parseInfoboxValue(content, 'length'),
+    wingspan: parseInfoboxValue(content, 'wingspan'),
+    height: parseInfoboxValue(content, 'height'),
+    maxSpeed: parseInfoboxValue(content, 'maxspeed'),
+    range: parseInfoboxValue(content, 'range'),
+    serviceLife: parseInfoboxValue(content, 'service'),
+    // Additional specifications
+    armament: parseInfoboxValue(content, 'armament'),
+    capacity: parseInfoboxValue(content, 'capacity'),
+    powerplant: parseInfoboxValue(content, 'engine'),
+    weight: parseInfoboxValue(content, 'weight'),
+    ceiling: parseInfoboxValue(content, 'ceiling'),
+    climbRate: parseInfoboxValue(content, 'climb rate'),
+    unitCost: parseInfoboxValue(content, 'unit cost'),
+    status: parseInfoboxValue(content, 'status'),
+    primaryUsers: parseInfoboxValue(content, 'primary user'),
+    produced: parseInfoboxValue(content, 'produced'),
+    number_built: parseInfoboxValue(content, 'number built')
+  };
+
+  // Extract history sections with more context
+  const sections = [
+    'History',
+    'Development',
+    'Design',
+    'Operational history',
+    'Background',
+    'Origins',
+    'Combat history',
+    'Service history',
+    'Notable incidents'
+  ];
+  
+  const sectionPattern = new RegExp(
+    `(?:${sections.join('|')})[\s\S]*?(?=\\n\\n[A-Z]|\\n*$)`,
+    'gi'
+  );
+  
+  const historyMatches = extract.match(sectionPattern);
+  const history = historyMatches
+    ?.map(section => section.trim())
+    .filter(section => section.length > 100) || [];
+
+  // Extract variants with better formatting
+  const variantsMatch = content.match(/==\s*Variants\s*==\s*([\s\S]*?)(?=\n\n==|$)/i);
+  const variants = variantsMatch?.[1]
+    ?.split('\n*')
+    .map(variant => cleanupText(variant))
+    .filter(variant => variant.length > 10) || [];
+
+  return {
+    specifications: Object.fromEntries(
+      Object.entries(specifications)
+        .filter(([_, value]) => value !== null)
+    ) as ExtendedPlaneInfo['specifications'],
+    history: history.slice(0, 5), // Increased to 5 most relevant history sections
+    variants: variants.slice(0, 8) // Increased to 8 most significant variants
+  };
+};
+
+export const useExtendedPlaneInfo = (planeName: string, options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: [...planeKeys.all, 'extended', planeName],
+    queryFn: () => getExtendedPlaneInfo(planeName),
+    enabled: options?.enabled && !!planeName,
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 };
 
 // React Query Hooks

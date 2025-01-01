@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
+import { Link } from '@tanstack/react-router'
+import { Bookmark } from 'lucide-react'
 
 const PREFETCH_THRESHOLD = 2;
 
@@ -64,18 +66,18 @@ const Index = () => {
 
   if (isLoadingNames) {
     return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#00ff00] animate-spin" />
       </div>
     );
   }
 
   if (isNamesError) {
     return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-2">Error loading planes</p>
-          <p className="text-sm text-primary/60">{namesError?.message}</p>
+          <p className="text-sm text-cyan-400">{namesError?.message}</p>
         </div>
       </div>
     );
@@ -88,15 +90,19 @@ const Index = () => {
   const isLoadingMore = isFetchingNextPage || planesQueries.some(query => query.isLoading);
 
   return (
-    <div className="min-h-screen bg-dark">
-      <header className="fixed top-0 w-full z-50 bg-dark/80 backdrop-blur-sm border-b border-primary/20">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-cyan-500/20">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-mono font-semibold text-primary">
-            PlaneFeed
+          <h1 className="text-xl font-mono font-semibold text-[#00ff00]">
+            PlaneMe
           </h1>
-          <span className="text-sm text-primary/60">
-            {totalPlanes} planes loaded
-          </span>
+          <Link 
+            to="/bookmarks" 
+            className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300"
+          >
+            <Bookmark className="w-4 h-4" />
+            <span className="text-sm font-mono">SYS.BOOKMARKS</span>
+          </Link>
         </div>
       </header>
 
@@ -141,7 +147,7 @@ const Index = () => {
           
           {isLoadingMore && (
             <div className="h-24 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#00ff00] animate-spin" />
             </div>
           )}
         </div>
